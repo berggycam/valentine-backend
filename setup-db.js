@@ -1,19 +1,10 @@
 #!/usr/bin/env node
 
 const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config();
 
-// Supabase configuration
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error('❌ Missing Supabase environment variables. Please check your .env file.');
-  console.error('Required variables:');
-  console.error('  NEXT_PUBLIC_SUPABASE_URL');
-  console.error('  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY');
-  process.exit(1);
-}
+// Supabase configuration (hardcoded as requested)
+const supabaseUrl = 'https://wcpysmnwsovhznvcxyyz.supabase.co';
+const supabaseKey = 'sb_publishable_8Vr6irzDMBXmPDMkIHkT1g_D9wUBwpR';
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
