@@ -1,158 +1,146 @@
-const jsonServer = require('json-server');
-const path = require('path');
-const fs = require('fs');
+const { createClient } = require('@supabase/supabase-js');
 
-const server = jsonServer.create();
+// Supabase configuration
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
-// Check if we're in a serverless environment (Vercel)
-const isServerless = process.env.VERCEL === '1';
-
-// Use in-memory database for serverless, file-based for local development
-let router;
-if (isServerless) {
-  // In-memory database for serverless
-  const initialData = {
-    proposals: [
-      {
-        "id": "7013",
-        "fromName": "David",
-        "toName": "jessica",
-        "message": "How we met: in school\n\nWhat I love about you: their voice\n\nHow you make me feel: i feel great\n\nMy Valentine's message: i miss you",
-        "emotions": [
-          "Love",
-          "Happiness",
-          "Passion"
-        ]
-      },
-      {
-        "id": "6f60",
-        "fromName": "dave",
-        "toName": "yh",
-        "message": "How we met: nothing\n\nWhat I love about you: yh\n\nHow you make me feel: yh\n\n\nMy Valentine's message: yh",
-        "emotions": [
-          "Hope"
-        ]
-      },
-      {
-        "id": "3a20",
-        "fromName": "Test",
-        "toName": "Test2",
-        "fromEmail": "test@test.com",
-        "message": "Test message"
-      },
-      {
-        "id": "34a3",
-        "fromName": "yh",
-        "toName": "yh",
-        "fromEmail": "bergsjoseph@gmail.com",
-        "toEmail": "",
-        "message": "yh",
-        "emotions": [
-          "Excitement"
-        ],
-        "createdAt": "2026-02-12T12:30:55.090Z"
-      },
-      {
-        "id": "29e5",
-        "fromName": "yh",
-        "toName": "yh",
-        "fromEmail": "yh@gmail.com",
-        "toEmail": "",
-        "message": "yh",
-        "emotions": [
-          "Excitement"
-        ],
-        "createdAt": "2026-02-12T12:32:29.816Z"
-      },
-      {
-        "id": "4596",
-        "fromName": "yh",
-        "toName": "yh",
-        "fromEmail": "y67@gmail.com",
-        "toEmail": "",
-        "message": "yh",
-        "emotions": [
-          "Nervousness"
-        ],
-        "createdAt": "2026-02-12T12:36:11.699Z"
-      },
-      {
-        "id": "3c5f",
-        "fromName": "yh",
-        "toName": "yh",
-        "fromEmail": "yh0@gmail.com",
-        "toEmail": "",
-        "message": "ok sure",
-        "emotions": [
-          "Nervousness"
-        ],
-        "createdAt": "2026-02-12T13:07:14.995Z"
-      }
-    ],
-    responses: []
-  };
-  router = jsonServer.router(initialData);
-} else {
-  // File-based database for local development
-  router = jsonServer.router(path.join(__dirname, 'db.json'));
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('Missing Supabase environment variables');
 }
 
-const middlewares = jsonServer.defaults();
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Custom middleware to handle CORS and other headers
-server.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  next();
-});
+// Simple Express-like server setup for Vercel
+const handler = async (req, res) => {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
 
-// Health check endpoint
-server.get('/api', (req, res) => {
-  res.json({ 
-    message: 'Valentine Backend is running! ❤️',
-    status: 'healthy',
-    endpoints: {
-      proposals: '/api/proposals',
-      responses: '/api/responses',
-      health: '/api'
-    }
-  });
-});
-
-// Use default middlewares
-server.use(middlewares);
-
-// Add custom routes before JSON Server router
-server.get('/api/proposals/:id/responses', (req, res) => {
-  const proposalId = req.params.id;
-  const db = router.db;
-  const responses = db.get('responses').filter({ proposalId }).value();
-  res.json(responses);
-});
-
-// Use default router with /api prefix
-server.use('/api', router);
-
-// Create a request handler for Vercel serverless functions
-const handler = (req, res) => {
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
-  
-  // Let json-server handle the request
-  return server(req, res);
+
+  const { pathname } = new URL(req.url, `http://${req.headers.host}`);
+  const pathParts = pathname.split('/').filter(Boolean);
+
+  try {
+    // Health check endpoint
+    if (pathname === '/api' && req.method === 'GET') {
+      return res.status(200).json({
+        message: 'Valentine Backend with Supabase is running! ❤️',
+        status: 'healthy',
+        endpoints: {
+          proposals: '/api/proposals',
+          responses: '/api/responses',
+          health: '/api'
+        }
+      });
+    }
+
+    // Proposals endpoints
+    if (pathParts[0] === 'api' && pathParts[1] === 'proposals') {
+      if (req.method === 'GET') {
+        if (pathParts[2]) {
+          // Get specific proposal: /api/proposals/{id}
+          const { data, error } = await supabase
+            .from('proposals')
+            .select('*')
+            .eq('id', pathParts[2])
+            .single();
+
+          if (error) {
+            return res.status(404).json({ error: 'Proposal not found' });
+          }
+
+          return res.status(200).json(data);
+        } else {
+          // Get all proposals: /api/proposals
+          const { data, error } = await supabase
+            .from('proposals')
+            .select('*')
+            .order('createdAt', { ascending: false });
+
+          if (error) {
+            return res.status(500).json({ error: error.message });
+          }
+
+          return res.status(200).json(data);
+        }
+      }
+
+      if (req.method === 'POST') {
+        // Create new proposal: /api/proposals
+        const body = req.body;
+        if (!body) {
+          return res.status(400).json({ error: 'Request body required' });
+        }
+
+        const { data, error } = await supabase
+          .from('proposals')
+          .insert([body])
+          .select()
+          .single();
+
+        if (error) {
+          return res.status(500).json({ error: error.message });
+        }
+
+        return res.status(201).json(data);
+      }
+    }
+
+    // Responses endpoints
+    if (pathParts[0] === 'api' && pathParts[1] === 'responses') {
+      if (req.method === 'GET') {
+        // Get responses, optionally filtered by proposalId
+        let query = supabase.from('responses').select('*');
+
+        const url = new URL(req.url, `http://${req.headers.host}`);
+        const proposalId = url.searchParams.get('proposalId');
+
+        if (proposalId) {
+          query = query.eq('proposalId', proposalId);
+        }
+
+        const { data, error } = await query.order('createdAt', { ascending: false });
+
+        if (error) {
+          return res.status(500).json({ error: error.message });
+        }
+
+        return res.status(200).json(data);
+      }
+
+      if (req.method === 'POST') {
+        // Create new response: /api/responses
+        const body = req.body;
+        if (!body) {
+          return res.status(400).json({ error: 'Request body required' });
+        }
+
+        const { data, error } = await supabase
+          .from('responses')
+          .insert([body])
+          .select()
+          .single();
+
+        if (error) {
+          return res.status(500).json({ error: error.message });
+        }
+
+        return res.status(201).json(data);
+      }
+    }
+
+    // 404 for unknown routes
+    return res.status(404).json({ error: 'Endpoint not found' });
+
+  } catch (error) {
+    console.error('Server error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 };
 
-// Export the handler for Vercel
 module.exports = handler;
-
-// Only start the server if not in a serverless environment
-if (process.env.VERCEL !== '1') {
-  const PORT = process.env.PORT || 3001;
-  server.listen(PORT, () => {
-    console.log(`JSON Server is running on port ${PORT}`);
-    console.log(`Health check: http://localhost:${PORT}/api`);
-  });
-}
