@@ -14,6 +14,19 @@ server.use((req, res, next) => {
   next();
 });
 
+// Health check endpoint
+server.get('/', (req, res) => {
+  res.json({ 
+    message: 'Valentine Backend is running! ❤️',
+    status: 'healthy',
+    endpoints: {
+      proposals: '/proposals',
+      responses: '/responses',
+      health: '/'
+    }
+  });
+});
+
 // Use default middlewares (logger, static, cors and no-cache)
 server.use(middlewares);
 
@@ -32,4 +45,5 @@ const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`JSON Server is running on port ${PORT}`);
   console.log(`Database file: ${path.join(__dirname, 'db.json')}`);
+  console.log(`Health check: http://localhost:${PORT}/`);
 });
