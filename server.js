@@ -18,6 +18,22 @@ const handler = async (req, res) => {
     return res.status(200).end();
   }
 
+  // Root endpoint
+  if (req.url === '/' && req.method === 'GET') {
+    return res.status(200).json({
+      message: 'Welcome to the Valentine\'s Day App API',
+      endpoints: {
+        'GET /proposals': 'Get all proposals',
+        'GET /proposals/:id': 'Get a specific proposal by ID',
+        'POST /proposals': 'Create a new proposal',
+        'GET /proposals/:id/responses': 'Get responses for a specific proposal',
+        'POST /proposals/:id/responses': 'Add a response to a proposal'
+      },
+      status: 'online',
+      timestamp: new Date().toISOString()
+    });
+  }
+
   const { pathname } = new URL(req.url, `http://${req.headers.host}`);
   const pathParts = pathname.split('/').filter(Boolean);
 
