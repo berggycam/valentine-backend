@@ -76,6 +76,58 @@ const handler = async (req, res) => {
 
     // Proposals endpoints
     if (pathParts[0] === 'api' && pathParts[1] === 'proposals') {
+      // Handle /api/proposals/{id}/responses first
+      if (pathParts[2] && pathParts[3] === 'responses') {
+        if (req.method === 'GET') {
+          // Get responses for a specific proposal
+          const { data, error } = await supabase
+            .from('responses')
+            .select('*')
+            .eq('proposalid', pathParts[2])
+            .order('createdat', { ascending: false });
+          
+          if (error) {
+            return res.status(500).json({ error: error.message });
+          }
+          
+          // Transform lowercase columns to camelCase
+          const transformed = data.map(item => ({
+            id: item.id,
+            proposalId: item.proposalid,
+            message: item.message,
+            fromName: item.fromname,
+            emotions: item.emotions,
+            createdAt: item.createdat
+          }));
+          
+          return res.status(200).json(transformed);
+        }
+        
+        if (req.method === 'POST') {
+          // Add a response to a proposal
+          if (!body) {
+            return res.status(400).json({ error: 'Request body required' });
+          }
+          
+          const { data, error } = await supabase
+            .from('responses')
+            .insert([{
+              proposalid: pathParts[2],
+              message: body.message,
+              fromname: body.fromName,
+              emotions: body.emotions
+            }])
+            .select()
+            .single();
+          
+          if (error) {
+            return res.status(500).json({ error: error.message });
+          }
+          
+          return res.status(201).json(data);
+        }
+      }
+      
       if (req.method === 'GET') {
         if (pathParts[2]) {
           // Get specific proposal: /api/proposals/{id}
@@ -162,58 +214,6 @@ const handler = async (req, res) => {
         }
 
         return res.status(201).json(data);
-      }
-      
-      // Handle /api/proposals/{id}/responses
-      if (pathParts[2] && pathParts[3] === 'responses') {
-        if (req.method === 'GET') {
-          // Get responses for a specific proposal
-          const { data, error } = await supabase
-            .from('responses')
-            .select('*')
-            .eq('proposalid', pathParts[2])
-            .order('createdat', { ascending: false });
-          
-          if (error) {
-            return res.status(500).json({ error: error.message });
-          }
-          
-          // Transform lowercase columns to camelCase
-          const transformed = data.map(item => ({
-            id: item.id,
-            proposalId: item.proposalid,
-            message: item.message,
-            fromName: item.fromname,
-            emotions: item.emotions,
-            createdAt: item.createdat
-          }));
-          
-          return res.status(200).json(transformed);
-        }
-        
-        if (req.method === 'POST') {
-          // Add a response to a proposal
-          if (!body) {
-            return res.status(400).json({ error: 'Request body required' });
-          }
-          
-          const { data, error } = await supabase
-            .from('responses')
-            .insert([{
-              proposalid: pathParts[2],
-              message: body.message,
-              fromname: body.fromName,
-              emotions: body.emotions
-            }])
-            .select()
-            .single();
-          
-          if (error) {
-            return res.status(500).json({ error: error.message });
-          }
-          
-          return res.status(201).json(data);
-        }
       }
     }
 
