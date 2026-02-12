@@ -1,12 +1,10 @@
 const jsonServer = require('json-server');
 const path = require('path');
-const fs = require('fs');
-
 const server = jsonServer.create();
 const router = jsonServer.router(path.join(__dirname, 'db.json'));
 const middlewares = jsonServer.defaults();
 
-// Custom middleware to handle CORS
+// Custom middleware to handle CORS and other headers
 server.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
@@ -15,19 +13,19 @@ server.use((req, res, next) => {
 });
 
 // Health check endpoint
-server.get('/', (req, res) => {
+server.get('/api', (req, res) => {
   res.json({ 
     message: 'Valentine Backend is running! ❤️',
     status: 'healthy',
     endpoints: {
-      proposals: '/proposals',
-      responses: '/responses',
-      health: '/'
+      proposals: '/api/proposals',
+      responses: '/api/responses',
+      health: '/api'
     }
   });
 });
 
-// Use default middlewares (logger, static, cors and no-cache)
+// Use default middlewares
 server.use(middlewares);
 
 // Add custom routes before JSON Server router
@@ -38,12 +36,25 @@ server.get('/api/proposals/:id/responses', (req, res) => {
   res.json(responses);
 });
 
-// Use default router
-server.use(router);
+// Use default router with /api prefix
+server.use('/api', router);
 
-const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
-  console.log(`JSON Server is running on port ${PORT}`);
-  console.log(`Database file: ${path.join(__dirname, 'db.json')}`);
-  console.log(`Health check: http://localhost:${PORT}/`);
-});
+// For Vercel serverless functions
+export default async (req, res) => {
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  // Let json-server handle the request
+  server(req, res);
+};
+
+// Only start the server if not in a serverless environment
+if (process.env.VERCEL !== '1') {
+  const PORT = process.env.PORT || 3001;
+  server.listen(PORT, () => {
+    console.log(`JSON Server is running on port ${PORT}`);
+    console.log(`Health check: http://localhost:${PORT}/api`);
+  });
+}

@@ -2,11 +2,13 @@
   "name": "valentine-backend",
   "version": "1.0.0",
   "description": "JSON Server for Valentine's Day App",
+  "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "json-server": "json-server --watch db.json --port 3001"
+    "json-server": "json-server --watch db.json --port 3001",
+    "build": "echo 'No build step required'"
   },
   "dependencies": {
     "@vercel/node": "^4.2.1",
