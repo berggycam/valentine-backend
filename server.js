@@ -1,8 +1,102 @@
 const jsonServer = require('json-server');
 const path = require('path');
+const fs = require('fs');
 
 const server = jsonServer.create();
-const router = jsonServer.router(path.join(__dirname, 'db.json'));
+
+// Check if we're in a serverless environment (Vercel)
+const isServerless = process.env.VERCEL === '1';
+
+// Use in-memory database for serverless, file-based for local development
+let router;
+if (isServerless) {
+  // In-memory database for serverless
+  const initialData = {
+    proposals: [
+      {
+        "id": "7013",
+        "fromName": "David",
+        "toName": "jessica",
+        "message": "How we met: in school\n\nWhat I love about you: their voice\n\nHow you make me feel: i feel great\n\nMy Valentine's message: i miss you",
+        "emotions": [
+          "Love",
+          "Happiness",
+          "Passion"
+        ]
+      },
+      {
+        "id": "6f60",
+        "fromName": "dave",
+        "toName": "yh",
+        "message": "How we met: nothing\n\nWhat I love about you: yh\n\nHow you make me feel: yh\n\n\nMy Valentine's message: yh",
+        "emotions": [
+          "Hope"
+        ]
+      },
+      {
+        "id": "3a20",
+        "fromName": "Test",
+        "toName": "Test2",
+        "fromEmail": "test@test.com",
+        "message": "Test message"
+      },
+      {
+        "id": "34a3",
+        "fromName": "yh",
+        "toName": "yh",
+        "fromEmail": "bergsjoseph@gmail.com",
+        "toEmail": "",
+        "message": "yh",
+        "emotions": [
+          "Excitement"
+        ],
+        "createdAt": "2026-02-12T12:30:55.090Z"
+      },
+      {
+        "id": "29e5",
+        "fromName": "yh",
+        "toName": "yh",
+        "fromEmail": "yh@gmail.com",
+        "toEmail": "",
+        "message": "yh",
+        "emotions": [
+          "Excitement"
+        ],
+        "createdAt": "2026-02-12T12:32:29.816Z"
+      },
+      {
+        "id": "4596",
+        "fromName": "yh",
+        "toName": "yh",
+        "fromEmail": "y67@gmail.com",
+        "toEmail": "",
+        "message": "yh",
+        "emotions": [
+          "Nervousness"
+        ],
+        "createdAt": "2026-02-12T12:36:11.699Z"
+      },
+      {
+        "id": "3c5f",
+        "fromName": "yh",
+        "toName": "yh",
+        "fromEmail": "yh0@gmail.com",
+        "toEmail": "",
+        "message": "ok sure",
+        "emotions": [
+          "Nervousness"
+        ],
+        "createdAt": "2026-02-12T13:07:14.995Z"
+      }
+    ],
+    responses: []
+  };
+  router = jsonServer.router(initialData);
+} else {
+  // File-based database for local development
+  router = jsonServer.router(path.join(__dirname, 'db.json'));
+}
+
 const middlewares = jsonServer.defaults();
 
 // Custom middleware to handle CORS and other headers
