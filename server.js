@@ -18,6 +18,29 @@ const handler = async (req, res) => {
     return res.status(200).end();
   }
 
+  // Parse JSON body for POST/PUT requests
+  let body = null;
+  if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
+    try {
+      body = await new Promise((resolve, reject) => {
+        let data = '';
+        req.on('data', chunk => {
+          data += chunk;
+        });
+        req.on('end', () => {
+          try {
+            resolve(JSON.parse(data));
+          } catch (e) {
+            reject(e);
+          }
+        });
+        req.on('error', reject);
+      });
+    } catch (error) {
+      return res.status(400).json({ error: 'Invalid JSON in request body' });
+    }
+  }
+
   // Root endpoint
   if (req.url === '/' && req.method === 'GET') {
     return res.status(200).json({
@@ -84,9 +107,13 @@ const handler = async (req, res) => {
 
       if (req.method === 'POST') {
         // Create new proposal: /api/proposals
-        const body = req.body;
         if (!body) {
           return res.status(400).json({ error: 'Request body required' });
+        }
+
+        // Generate an ID if not provided
+        if (!body.id) {
+          body.id = Math.random().toString(36).substring(2, 15);
         }
 
         const { data, error } = await supabase
@@ -127,7 +154,6 @@ const handler = async (req, res) => {
 
       if (req.method === 'POST') {
         // Create new response: /api/responses
-        const body = req.body;
         if (!body) {
           return res.status(400).json({ error: 'Request body required' });
         }
