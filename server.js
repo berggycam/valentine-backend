@@ -1,13 +1,9 @@
-import { create, router as _router, defaults } from 'json-server';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+const jsonServer = require('json-server');
+const path = require('path');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const server = create();
-const router = _router(join(__dirname, 'db.json'));
-const middlewares = defaults();
+const server = jsonServer.create();
+const router = jsonServer.router(path.join(__dirname, 'db.json'));
+const middlewares = jsonServer.defaults();
 
 // Custom middleware to handle CORS and other headers
 server.use((req, res, next) => {
@@ -56,8 +52,7 @@ const handler = (req, res) => {
 };
 
 // Export the handler for Vercel
-// This must be the default export for Vercel to recognize it
-export default handler;
+module.exports = handler;
 
 // Only start the server if not in a serverless environment
 if (process.env.VERCEL !== '1') {

@@ -2,7 +2,6 @@
   "name": "valentine-backend",
   "version": "1.0.0",
   "description": "JSON Server for Valentine's Day App",
-  "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
