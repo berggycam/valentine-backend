@@ -9,6 +9,10 @@
     "json-server": "json-server --watch db.json --port 3001"
   },
   "dependencies": {
+    "@vercel/node": "^4.2.1",
     "json-server": "^0.17.4"
+  },
+  "engines": {
+    "node": ">=14.x"
   }
 }
